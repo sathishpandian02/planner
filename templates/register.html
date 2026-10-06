@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration - StudyMate</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-page">
+  <div class="auth-card" style="max-width: 540px;">
+    <div class="auth-header">
+      <div class="auth-logo">🎓</div>
+      <h2>Student Registration</h2>
+      <p>Create your personal StudyMate academic account</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages" style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div class="flash-alert {{ category }}">
+              <span>{{ message }}</span>
+              <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name *</label>
+          <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Arun Kumar" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username *</label>
+          <input type="text" id="username" name="username" class="form-control" placeholder="e.g. arun2026" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address *</label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="arun@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password *</label>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Create a strong password" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="college">College / University Name</label>
+        <input type="text" id="college" name="college" class="form-control" placeholder="e.g. National Institute of Technology">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="course">Course / Degree</label>
+          <input type="text" id="course" name="course" class="form-control" placeholder="e.g. B.Sc Information Technology">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="year_of_study">Year of Study</label>
+          <select id="year_of_study" name="year_of_study" class="form-control">
+            <option value="1st Year">1st Year</option>
+            <option value="2nd Year">2nd Year</option>
+            <option value="3rd Year" selected>3rd Year</option>
+            <option value="4th Year">4th Year</option>
+            <option value="Postgraduate">Postgraduate</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-header btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; margin-top: 12px;">
+        Complete Registration & Get Started
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? <a href="{{ url_for('login') }}">Sign In</a>
+    </div>
+  </div>
+</body>
+</html>

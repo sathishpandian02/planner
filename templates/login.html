@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - StudyMate</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">📚</div>
+      <h2>Welcome to StudyMate</h2>
+      <p>Log in to manage your study plans & progress</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages" style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div class="flash-alert {{ category }}">
+              <span>{{ message }}</span>
+              <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. arun2026 or demo_student" value="{{ username or '' }}" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+      </div>
+
+      <button type="submit" class="btn-header btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; margin-top: 10px;">
+        Sign In to Dashboard
+      </button>
+    </form>
+
+    <div class="demo-login-box">
+      <p><strong>Quick Presentation Demo Account</strong></p>
+      <button type="button" class="btn-header btn-secondary btn-sm" onclick="autoFillDemo()" style="width: 100%; justify-content: center;">
+        ⚡ Fill Demo Student Credentials
+      </button>
+    </div>
+
+    <div class="auth-footer">
+      Don't have an account yet? <a href="{{ url_for('register') }}">Create an Account</a>
+    </div>
+  </div>
+
+  <script>
+    function autoFillDemo() {
+      document.getElementById('username').value = 'demo_student';
+      document.getElementById('password').value = 'demo123';
+    }
+  </script>
+</body>
+</html>

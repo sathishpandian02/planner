@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Calendar - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Academic Calendar & Events 📆</h2>
+    <p>Monthly visual roadmap of all study sessions, exams, tasks and deadlines</p>
+  </div>
+
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <button id="calPrevBtn" class="btn-header btn-secondary btn-sm">◀ Prev</button>
+    <button id="calTodayBtn" class="btn-header btn-secondary btn-sm">Today</button>
+    <button id="calNextBtn" class="btn-header btn-secondary btn-sm">Next ▶</button>
+  </div>
+</div>
+
+<!-- Calendar Card -->
+<div class="card">
+  <div class="card-header" style="margin-bottom: 20px;">
+    <h3 id="calendarMonthTitle" style="font-size: 20px;">Month Year</h3>
+    <div style="display: flex; gap: 12px; font-size: 12px; font-weight: 700; flex-wrap: wrap;">
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #4F46E5; border-radius: 2px;"></span> Study Plan</span>
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #EF4444; border-radius: 2px;"></span> Exam</span>
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #F59E0B; border-radius: 2px;"></span> Task</span>
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #8B5CF6; border-radius: 2px;"></span> Goal Deadline</span>
+    </div>
+  </div>
+
+  <div id="studyCalendar" class="calendar-grid">
+    <!-- Rendered dynamically by StudyCalendar in main.js -->
+  </div>
+</div>
+
+<!-- Day Details Modal -->
+<div id="dayDetailsModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="dayDetailsTitle">Day Activities</h3>
+      <button class="flash-close" onclick="closeModal('dayDetailsModal')">✕</button>
+    </div>
+    <div class="modal-body" id="dayDetailsBody">
+      <!-- Injected by JavaScript -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-header btn-secondary" onclick="closeModal('dayDetailsModal')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

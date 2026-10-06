@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Achievements & Badges - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Academic Milestones & Badges 🏆</h2>
+    <p>Earn awards, streak multipliers, and honors for your dedicated study consistency</p>
+  </div>
+</div>
+
+<!-- Header Stats Cards -->
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 28px;">
+  <div class="stat-card">
+    <div class="stat-icon-wrap indigo">🎖</div>
+    <div class="stat-info">
+      <div class="stat-label">Unlocked Badges</div>
+      <div class="stat-value">{{ unlocked_count }} <span style="font-size: 14px; color: var(--text-muted);">/ {{ total_count }}</span></div>
+      <div class="stat-subtext">{{ (unlocked_count / total_count * 100) | round | int }}% Completed</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap yellow">💎</div>
+    <div class="stat-info">
+      <div class="stat-label">Achievement Points</div>
+      <div class="stat-value">{{ total_points }} <span style="font-size: 14px;">pts</span></div>
+      <div class="stat-subtext">Level: Scholar</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap orange">🔥</div>
+    <div class="stat-info">
+      <div class="stat-label">Streak Status</div>
+      <div class="stat-value">Active</div>
+      <div class="stat-subtext">Keep learning daily</div>
+    </div>
+  </div>
+</div>
+
+<!-- Badges Grid -->
+<div class="badge-grid">
+  {% for badge in badges %}
+  <div class="achievement-card {% if badge.is_unlocked %}unlocked{% else %}locked{% endif %}">
+    <div class="badge-icon-box">
+      {{ badge.icon }}
+    </div>
+    <div class="badge-content" style="flex: 1;">
+      <h4>{{ badge.title }}</h4>
+      <p>{{ badge.description }}</p>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="badge-points">
+          <span>✨</span> +{{ badge.points }} XP
+        </span>
+        {% if badge.is_unlocked and badge.unlocked_at %}
+          <span style="font-size: 10px; color: var(--text-subtle);">
+            Earned: {{ badge.unlocked_at.split(' ')[0] }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

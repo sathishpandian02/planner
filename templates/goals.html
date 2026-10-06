@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Study Goals - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Academic & Study Goals 🎯</h2>
+    <p>Set semester targets, skill mastery milestones, and daily study objectives</p>
+  </div>
+  <button class="btn-header btn-primary" onclick="openModal('addGoalModal')">
+    <span>+</span> <span>Establish New Goal</span>
+  </button>
+</div>
+
+<!-- Goals Stats -->
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-icon-wrap indigo">🎯</div>
+    <div class="stat-info">
+      <div class="stat-label">Total Goals</div>
+      <div class="stat-value">{{ total_goals }}</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap green">🏆</div>
+    <div class="stat-info">
+      <div class="stat-label">Completed Goals</div>
+      <div class="stat-value">{{ comp_goals }}</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap purple">⚡</div>
+    <div class="stat-info">
+      <div class="stat-label">In Progress</div>
+      <div class="stat-value">{{ total_goals - comp_goals }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Goals List -->
+{% if goals %}
+  <div class="grid-2">
+    {% for goal in goals %}
+    <div class="card" style="border-top: 5px solid {% if goal.current_percent >= goal.target_percent or goal.is_completed %}var(--success){% else %}var(--purple){% endif %};">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <span class="badge" style="background: var(--purple-light); color: var(--purple);">
+            {{ goal.category }}
+          </span>
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 6px;">
+            {{ goal.title }}
+          </h3>
+        </div>
+
+        <form method="POST" action="{{ url_for('delete_goal', id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
+          <button type="submit" class="btn-icon" title="Delete Goal" style="color: var(--danger);">
+            🗑
+          </button>
+        </form>
+      </div>
+
+      <!-- Goal Progress Bar -->
+      <div style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+          <span>Target Progress</span>
+          <span style="color: {% if goal.current_percent >= goal.target_percent %}var(--success){% else %}var(--purple){% endif %};">
+            {{ goal.current_percent }}% / {{ goal.target_percent }}%
+          </span>
+        </div>
+        <div class="progress-bar-container" style="height: 10px;">
+          <div class="progress-bar-fill {% if goal.current_percent >= goal.target_percent %}success{% endif %}" style="width: {{ [goal.current_percent, 100]|min }}%;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          <span>
+            {% if goal.current_percent >= goal.target_percent or goal.is_completed %}
+              <strong style="color: var(--success);">✓ Goal Accomplished!</strong>
+            {% else %}
+              Status: <strong>Active</strong>
+            {% endif %}
+          </span>
+          {% if goal.deadline %}
+            <span>Deadline: <strong>{{ goal.deadline }}</strong></span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Update Progress Form -->
+      <form method="POST" action="{{ url_for('update_goal_progress', id=goal.id) }}" style="margin-top: 18px; display: flex; gap: 8px; align-items: center; background: #F8FAFC; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Update %:</label>
+        <input type="number" name="current_percent" class="form-control form-control-sm" value="{{ goal.current_percent }}" min="0" max="100" style="width: 80px; padding: 6px 8px; font-size: 13px;">
+        <button type="submit" class="btn-header btn-secondary btn-sm" style="padding: 6px 12px;">Save</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 48px 24px;">
+    <div style="font-size: 48px; margin-bottom: 12px;">🎯</div>
+    <h3 style="font-size: 18px; font-weight: 700;">No academic goals defined yet</h3>
+    <p style="color: var(--text-muted); margin-top: 4px;">
+      Setting measurable targets like "Score 85% in Finals" or "Finish Python syllabus" keeps you motivated.
+    </p>
+    <button class="btn-header btn-primary" onclick="openModal('addGoalModal')" style="margin-top: 18px;">
+      + Set First Goal
+    </button>
+  </div>
+{% endif %}
+
+<!-- Add Goal Modal -->
+<div id="addGoalModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Establish Academic Goal</h3>
+      <button class="flash-close" onclick="closeModal('addGoalModal')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('goals') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="goal_title">Goal Statement *</label>
+          <input type="text" id="goal_title" name="title" class="form-control" placeholder="e.g. Complete 50 SQL coding challenges" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="goal_category">Category</label>
+            <select id="goal_category" name="category" class="form-control">
+              <option value="Academic">Academic Coursework</option>
+              <option value="Skills">Coding & Skills</option>
+              <option value="Habit">Study Habits</option>
+              <option value="Project">Projects & Research</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="goal_deadline">Target Deadline</label>
+            <input type="date" id="goal_deadline" name="deadline" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="goal_target">Target Goal %</label>
+            <input type="number" id="goal_target" name="target_percent" class="form-control" value="100" min="1" max="100" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="goal_curr">Current Progress %</label>
+            <input type="number" id="goal_curr" name="current_percent" class="form-control" value="0" min="0" max="100" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('addGoalModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Establish Goal</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

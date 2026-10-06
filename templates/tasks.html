@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block title %}Daily Tasks - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Daily Tasks & To-Do ✅</h2>
+    <p>Manage actionable academic study items, revisions, and problem sets</p>
+  </div>
+  <button class="btn-header btn-primary" onclick="openModal('addTaskModal')">
+    <span>+</span> <span>Add New Task</span>
+  </button>
+</div>
+
+<!-- Task Stats Bar -->
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-icon-wrap indigo">📋</div>
+    <div class="stat-info">
+      <div class="stat-label">Total Tasks</div>
+      <div class="stat-value">{{ total_tasks }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap green">✅</div>
+    <div class="stat-info">
+      <div class="stat-label">Completed</div>
+      <div class="stat-value">{{ completed_tasks }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap yellow">⏳</div>
+    <div class="stat-info">
+      <div class="stat-label">Pending</div>
+      <div class="stat-value">{{ pending_tasks }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap purple">📈</div>
+    <div class="stat-info">
+      <div class="stat-label">Completion</div>
+      <div class="stat-value">{{ completion_rate }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filter Bar -->
+<div class="card" style="margin-bottom: 24px; padding: 18px 20px;">
+  <form method="GET" action="{{ url_for('tasks') }}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+    <div style="flex: 2; min-width: 200px;">
+      <input type="text" name="q" class="form-control" placeholder="🔍 Search tasks by title or subject..." value="{{ current_filters.q }}">
+    </div>
+
+    <div style="flex: 1; min-width: 140px;">
+      <select name="subject" class="form-control">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}
+          <option value="{{ s.id }}" {% if current_filters.subject == s.id|string %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 130px;">
+      <select name="priority" class="form-control">
+        <option value="">All Priorities</option>
+        <option value="High" {% if current_filters.priority == 'High' %}selected{% endif %}>High</option>
+        <option value="Medium" {% if current_filters.priority == 'Medium' %}selected{% endif %}>Medium</option>
+        <option value="Low" {% if current_filters.priority == 'Low' %}selected{% endif %}>Low</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 130px;">
+      <select name="status" class="form-control">
+        <option value="">All Statuses</option>
+        <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completed</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn-header btn-primary btn-sm" style="padding: 10px 16px;">Apply Filter</button>
+    <a href="{{ url_for('tasks') }}" class="btn-header btn-secondary btn-sm" style="padding: 10px 14px;">Reset</a>
+  </form>
+</div>
+
+<!-- Tasks List -->
+<div class="card">
+  {% if tasks %}
+    <div class="task-list">
+      {% for task in tasks %}
+      <div class="task-item {% if task.is_completed %}completed{% endif %}">
+        <div class="task-left">
+          <div class="custom-checkbox {% if task.is_completed %}checked{% endif %}" onclick="handleTaskToggle({{ task.id }}, this)">
+            {% if task.is_completed %}✓{% endif %}
+          </div>
+          <div>
+            <div class="task-title">{{ task.title }}</div>
+            <div class="task-meta">
+              {% if task.subject_name %}
+                <span style="color: {{ task.subject_color or '#4F46E5' }}; font-weight: 700;">{{ task.subject_name }}</span> •
+              {% endif %}
+              <span>📅 Due: <strong>{{ task.due_date }}</strong></span> •
+              <span class="badge badge-{{ task.priority.lower() }}">{{ task.priority }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn-icon" title="Edit Task" onclick="openEditTaskModal({{ task.id }}, '{{ task.title | replace("'", "\\'") }}', '{{ task.subject_id or '' }}', '{{ task.due_date }}', '{{ task.priority }}')">
+            ✏️
+          </button>
+          <form method="POST" action="{{ url_for('delete_task', id=task.id) }}" onsubmit="return confirm('Delete this task?')">
+            <button type="submit" class="btn-icon" title="Delete Task" style="color: var(--danger);">
+              🗑
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+      <div style="font-size: 40px; margin-bottom: 8px;">🎯</div>
+      <p style="font-size: 15px; font-weight: 600;">No tasks matching your current filter.</p>
+      <button class="btn-header btn-primary btn-sm" onclick="openModal('addTaskModal')" style="margin-top: 12px;">+ Add New Task</button>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Add Task Modal -->
+<div id="addTaskModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Add Daily Task</h3>
+      <button class="flash-close" onclick="closeModal('addTaskModal')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('tasks') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="task_title">Task Description *</label>
+          <input type="text" id="task_title" name="title" class="form-control" placeholder="e.g. Complete Python loops assignment" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="task_subject">Subject (Optional)</label>
+          <select id="task_subject" name="subject_id" class="form-control">
+            <option value="">-- General / No Subject --</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.code or '' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="task_due">Due Date *</label>
+            <input type="date" id="task_due" name="due_date" class="form-control" value="{{ current_filters.date or '' }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="task_priority">Priority</label>
+            <select id="task_priority" name="priority" class="form-control">
+              <option value="High">High Priority</option>
+              <option value="Medium" selected>Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('addTaskModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Save Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Edit Task</h3>
+      <button class="flash-close" onclick="closeModal('editTaskModal')">✕</button>
+    </div>
+    <form id="editTaskForm" method="POST" action="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="edit_task_title">Task Description *</label>
+          <input type="text" id="edit_task_title" name="title" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit_task_subject">Subject</label>
+          <select id="edit_task_subject" name="subject_id" class="form-control">
+            <option value="">-- General / No Subject --</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit_task_due">Due Date *</label>
+            <input type="date" id="edit_task_due" name="due_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit_task_priority">Priority</label>
+            <select id="edit_task_priority" name="priority" class="form-control">
+              <option value="High">High Priority</option>
+              <option value="Medium">Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('editTaskModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Update Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Set default due date to today if empty
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dueInput = document.getElementById('task_due');
+  if (dueInput && !dueInput.value) {
+    dueInput.value = todayStr;
+  }
+
+  function openEditTaskModal(id, title, subjectId, dueDate, priority) {
+    document.getElementById('editTaskForm').action = `/tasks/${id}/edit`;
+    document.getElementById('edit_task_title').value = title;
+    document.getElementById('edit_task_subject').value = subjectId || '';
+    document.getElementById('edit_task_due').value = dueDate;
+    document.getElementById('edit_task_priority').value = priority;
+    openModal('editTaskModal');
+  }
+</script>
+{% endblock %}

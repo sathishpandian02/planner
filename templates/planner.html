@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Study Planner - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Study Planner Schedule 📅</h2>
+    <p>Organize daily study blocks, focus topics, and hourly agendas</p>
+  </div>
+  <button class="btn-header btn-primary" onclick="openModal('addPlanModal')">
+    <span>+</span> <span>Schedule Study Plan</span>
+  </button>
+</div>
+
+<!-- Date Selector Bar -->
+<div class="card" style="margin-bottom: 24px; padding: 16px 20px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-weight: 700; font-size: 15px;">Viewing Schedule For:</span>
+      <form method="GET" action="{{ url_for('planner') }}" style="display: flex; align-items: center; gap: 8px;">
+        <input type="date" name="date" class="form-control" value="{{ selected_date }}" onchange="this.form.submit()" style="width: auto;">
+      </form>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('planner', date=selected_date) }}" class="btn-header btn-secondary btn-sm" id="btnPlanToday">Today</a>
+    </div>
+  </div>
+</div>
+
+<!-- Study Plans List -->
+{% if plans %}
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    {% for plan in plans %}
+    <div class="card" style="border-left: 6px solid {{ plan.subject_color or '#4F46E5' }}; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 700; color: {{ plan.subject_color or '#4F46E5' }}; background: #F1F5F9; padding: 4px 10px; border-radius: var(--radius-sm);">
+              {{ plan.subject_name or 'General Study' }}
+            </span>
+            <span class="badge badge-{{ plan.priority.lower() }}">{{ plan.priority }} Priority</span>
+            {% if plan.is_completed %}
+              <span class="badge badge-success">✓ Completed</span>
+            {% endif %}
+          </div>
+
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 8px;">
+            {{ plan.topic }}
+          </h3>
+
+          <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap;">
+            {% if plan.start_time %}
+              <span>⏱ <strong>{{ plan.start_time }}</strong> {% if plan.end_time %}to <strong>{{ plan.end_time }}</strong>{% endif %}</span>
+            {% endif %}
+            <span>📅 {{ plan.plan_date }}</span>
+          </div>
+
+          {% if plan.notes %}
+            <div style="margin-top: 10px; padding: 10px 14px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px; color: #475569; border: 1px solid #F1F5F9;">
+              <strong>Notes:</strong> {{ plan.notes }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <form method="POST" action="{{ url_for('toggle_plan', id=plan.id) }}">
+            <button type="submit" class="btn-header {% if plan.is_completed %}btn-secondary{% else %}btn-success{% endif %} btn-sm">
+              {% if plan.is_completed %}Mark Incomplete{% else %}✓ Mark Done{% endif %}
+            </button>
+          </form>
+
+          <form method="POST" action="{{ url_for('delete_plan', id=plan.id) }}" onsubmit="return confirm('Delete this study plan?')">
+            <button type="submit" class="btn-icon" title="Delete Plan" style="color: var(--danger);">
+              🗑
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 48px 24px;">
+    <div style="font-size: 48px; margin-bottom: 12px;">📅</div>
+    <h3 style="font-size: 18px; font-weight: 700;">No study sessions planned for {{ selected_date }}</h3>
+    <p style="color: var(--text-muted); margin-top: 4px;">
+      Schedule a dedicated focus slot to stay ahead in your courses.
+    </p>
+    <button class="btn-header btn-primary" onclick="openModal('addPlanModal')" style="margin-top: 18px;">
+      + Create Plan For This Date
+    </button>
+  </div>
+{% endif %}
+
+<!-- Add Plan Modal -->
+<div id="addPlanModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Schedule Study Plan</h3>
+      <button class="flash-close" onclick="closeModal('addPlanModal')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('planner') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="plan_subject">Subject</label>
+          <select id="plan_subject" name="subject_id" class="form-control">
+            <option value="">-- Select Subject (Optional) --</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.code or '' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="plan_topic">Topic / Chapter *</label>
+          <input type="text" id="plan_topic" name="topic" class="form-control" placeholder="e.g. Python Functions & Scope" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="plan_date">Plan Date *</label>
+            <input type="date" id="plan_date" name="plan_date" class="form-control" value="{{ selected_date }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="plan_priority">Priority</label>
+            <select id="plan_priority" name="priority" class="form-control">
+              <option value="High">High Priority</option>
+              <option value="Medium" selected>Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="plan_start">Start Time</label>
+            <input type="time" id="plan_start" name="start_time" class="form-control" value="18:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="plan_end">End Time</label>
+            <input type="time" id="plan_end" name="end_time" class="form-control" value="19:30">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="plan_notes">Notes / Objectives</label>
+          <textarea id="plan_notes" name="notes" class="form-control" rows="3" placeholder="Key problems to solve, textbook pages, reference links..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('addPlanModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Schedule Session</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

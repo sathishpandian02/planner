@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - StudyMate{% endblock %}
+
+{% block content %}
+<!-- Motivational Banner with Greeting -->
+<div class="motivation-banner">
+  <div class="motivation-content">
+    <h3>
+      {% set hour = now_hour if now_hour is defined else 9 %}
+      Good Day, {{ user.name.split(' ')[0] }}! 👋
+    </h3>
+    <p>"{{ quote_text }}"</p>
+    <div class="motivation-author">— {{ quote_author }}</div>
+  </div>
+  <div class="motivation-icon">🚀</div>
+</div>
+
+<!-- Dynamic Notifications & Reminders -->
+{% if notifications %}
+<div style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 8px;">
+  {% for notif in notifications %}
+  <div style="background: white; border-radius: var(--radius-md); padding: 12px 18px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm);">
+    <span style="font-size: 20px;">{{ notif.icon }}</span>
+    <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">{{ notif.text }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- 6 Dashboard Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon-wrap indigo">📝</div>
+    <div class="stat-info">
+      <div class="stat-label">Today's Tasks</div>
+      <div class="stat-value">{{ today_total }}</div>
+      <div class="stat-subtext">{{ today_pending }} pending</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap green">✅</div>
+    <div class="stat-info">
+      <div class="stat-label">Completed</div>
+      <div class="stat-value">{{ today_completed }}</div>
+      <div class="stat-subtext">{{ daily_progress_pct }}% of today</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap yellow">⏳</div>
+    <div class="stat-info">
+      <div class="stat-label">Pending Tasks</div>
+      <div class="stat-value">{{ today_pending }}</div>
+      <div class="stat-subtext">Action required</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap sky">⏱</div>
+    <div class="stat-info">
+      <div class="stat-label">Study Hours</div>
+      <div class="stat-value">{{ today_study_hours }} <span style="font-size: 14px; font-weight: 600;">hrs</span></div>
+      <div class="stat-subtext">{{ total_study_hours }} hrs total</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap orange">🔥</div>
+    <div class="stat-info">
+      <div class="stat-label">Current Streak</div>
+      <div class="stat-value">{{ streak_info.current_streak }} <span style="font-size: 14px; font-weight: 600;">Days</span></div>
+      <div class="stat-subtext">Best: {{ streak_info.best_streak }} Days</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap purple">📊</div>
+    <div class="stat-info">
+      <div class="stat-label">Overall Progress</div>
+      <div class="stat-value">{{ overall_progress }}%</div>
+      <div class="progress-bar-container" style="margin: 4px 0 0 0; height: 6px;">
+        <div class="progress-bar-fill" style="width: {{ overall_progress }}%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main 2-Column Dashboard Layout -->
+<div class="grid-2">
+  <!-- Left Column: Today's Tasks & Today's Schedule -->
+  <div>
+    <!-- Today's Tasks Card -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h3><span>✅</span> Today's Tasks (To-Do)</h3>
+        <a href="{{ url_for('tasks') }}" class="btn-header btn-secondary btn-sm">+ Add Task</a>
+      </div>
+
+      {% if today_tasks %}
+        <div class="task-list">
+          {% for task in today_tasks %}
+          <div class="task-item {% if task.is_completed %}completed{% endif %}">
+            <div class="task-left">
+              <div class="custom-checkbox {% if task.is_completed %}checked{% endif %}" onclick="handleTaskToggle({{ task.id }}, this)">
+                {% if task.is_completed %}✓{% endif %}
+              </div>
+              <div>
+                <div class="task-title">{{ task.title }}</div>
+                <div class="task-meta">
+                  {% if task.subject_name %}
+                    <span style="color: {{ task.subject_color or '#4F46E5' }}; font-weight: 600;">{{ task.subject_name }}</span> •
+                  {% endif %}
+                  <span class="badge badge-{{ task.priority.lower() }}">{{ task.priority }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 28px; color: var(--text-muted);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+          <p>No tasks scheduled for today. Take a break or add a new goal!</p>
+          <a href="{{ url_for('tasks') }}" class="btn-header btn-primary btn-sm" style="margin-top: 12px;">Create Task</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Today's Study Schedule -->
+    <div class="card">
+      <div class="card-header">
+        <h3><span>📅</span> Today's Study Plan</h3>
+        <a href="{{ url_for('planner') }}" class="btn-header btn-secondary btn-sm">View Schedule</a>
+      </div>
+
+      {% if today_plans %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for plan in today_plans %}
+          <div style="border-left: 4px solid {{ plan.subject_color or '#4F46E5' }}; padding: 12px 16px; background: #F8FAFC; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                {{ plan.topic }}
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                <span style="font-weight: 600; color: {{ plan.subject_color or '#4F46E5' }}">{{ plan.subject_name or 'General' }}</span> • 
+                <span>{{ plan.start_time }} - {{ plan.end_time }}</span>
+              </div>
+              {% if plan.notes %}
+              <div style="font-size: 11px; color: var(--text-subtle); margin-top: 4px;">{{ plan.notes }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <span class="badge badge-{{ plan.priority.lower() }}">{{ plan.priority }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+          <p>No study sessions planned for today.</p>
+          <a href="{{ url_for('planner') }}" class="btn-header btn-secondary btn-sm" style="margin-top: 8px;">Plan a Session</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Upcoming Exams & Subjects Progress -->
+  <div>
+    <!-- Upcoming Exams & Deadlines -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h3><span>📝</span> Upcoming Exams & Deadlines</h3>
+        <a href="{{ url_for('exams') }}" class="btn-header btn-secondary btn-sm">View All</a>
+      </div>
+
+      {% if upcoming_exams %}
+        {% for exam in upcoming_exams %}
+        <div class="exam-card {% if exam.days_left <= 3 %}urgent{% endif %}">
+          <div class="exam-top">
+            <div>
+              <div class="exam-name">{{ exam.name }}</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                <span style="font-weight: 600; color: {{ exam.subject_color }}">{{ exam.subject_name }}</span> • 
+                {{ exam.exam_date }} ({{ exam.exam_time or 'Time TBD' }})
+              </div>
+            </div>
+            <div class="exam-badge">
+              {% if exam.days_left == 0 %}
+                TODAY!
+              {% elif exam.days_left == 1 %}
+                1 Day Left
+              {% else %}
+                {{ exam.days_left }} Days Left
+              {% endif %}
+            </div>
+          </div>
+          {% if exam.important_topics %}
+          <div style="margin-top: 10px; font-size: 12px; color: #475569; background: #F8FAFC; padding: 8px 12px; border-radius: var(--radius-sm);">
+            <strong>Focus:</strong> {{ exam.important_topics }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+          <p>No upcoming exams logged.</p>
+          <a href="{{ url_for('exams') }}" class="btn-header btn-secondary btn-sm" style="margin-top: 8px;">+ Add Exam</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Subjects Progress Overview -->
+    <div class="card">
+      <div class="card-header">
+        <h3><span>📚</span> Subjects Progress</h3>
+        <a href="{{ url_for('subjects') }}" class="btn-header btn-secondary btn-sm">Manage</a>
+      </div>
+
+      {% if dashboard_subjects %}
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          {% for sub in dashboard_subjects %}
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">{{ sub.name }}</span>
+              <span style="font-size: 12px; font-weight: 700; color: {{ sub.color or '#4F46E5' }};">{{ sub.progress_pct }}%</span>
+            </div>
+            <div class="progress-bar-container" style="height: 7px; margin: 0;">
+              <div class="progress-bar-fill" style="width: {{ sub.progress_pct }}%; background: {{ sub.color or '#4F46E5' }};"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-subtle); margin-top: 3px;">
+              <span>{{ sub.completed_topics }}/{{ sub.total_topics }} Topics Finished</span>
+              <span>{{ sub.faculty or '' }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+          <p>No subjects added yet.</p>
+          <a href="{{ url_for('subjects') }}" class="btn-header btn-primary btn-sm" style="margin-top: 8px;">+ Add First Subject</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

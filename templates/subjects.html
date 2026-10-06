@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Subjects Management - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Academic Subjects 📚</h2>
+    <p>Track curriculum syllabus, faculty details, and syllabus topic completion</p>
+  </div>
+  <button class="btn-header btn-primary" onclick="openModal('addSubjectModal')">
+    <span>+</span> <span>Add New Subject</span>
+  </button>
+</div>
+
+<!-- Subjects Grid -->
+{% if subjects %}
+  <div class="grid-2">
+    {% for sub in subjects %}
+    <div class="card" style="border-top: 5px solid {{ sub.color or '#4F46E5' }};">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main);">{{ sub.name }}</h3>
+            {% if sub.code %}
+              <span class="badge" style="background-color: var(--primary-light); color: var(--primary);">{{ sub.code }}</span>
+            {% endif %}
+          </div>
+          {% if sub.faculty %}
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+              👨‍🏫 Faculty: <strong>{{ sub.faculty }}</strong>
+            </div>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-icon" title="Edit Subject" onclick="openEditModal({{ sub.id }}, '{{ sub.name }}', '{{ sub.code or '' }}', '{{ sub.faculty or '' }}', {{ sub.total_topics }}, {{ sub.completed_topics }}, '{{ sub.target_date or '' }}', '{{ sub.color or '#4F46E5' }}')">
+            ✏️
+          </button>
+          <form method="POST" action="{{ url_for('delete_subject', id=sub.id) }}" onsubmit="return confirm('Delete this subject and associated data?')">
+            <button type="submit" class="btn-icon" title="Delete Subject" style="color: var(--danger);">
+              🗑
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Syllabus Progress -->
+      <div style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+          <span>Syllabus Completion</span>
+          <span style="color: {{ sub.color or '#4F46E5' }}">{{ sub.progress_pct }}%</span>
+        </div>
+        <div class="progress-bar-container" style="height: 10px;">
+          <div class="progress-bar-fill" style="width: {{ sub.progress_pct }}%; background: {{ sub.color or '#4F46E5' }};"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          <span><strong>{{ sub.completed_topics }}</strong> of <strong>{{ sub.total_topics }}</strong> Topics Completed</span>
+          {% if sub.target_date %}
+            <span>Target: <strong>{{ sub.target_date }}</strong></span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 48px 24px;">
+    <div style="font-size: 48px; margin-bottom: 12px;">📚</div>
+    <h3 style="font-size: 18px; font-weight: 700;">No subjects added yet</h3>
+    <p style="color: var(--text-muted); margin-top: 4px; max-width: 400px; margin-left: auto; margin-right: auto;">
+      Start by creating your course subjects like Python, Database Systems, Computer Networks to organize your study plan.
+    </p>
+    <button class="btn-header btn-primary" onclick="openModal('addSubjectModal')" style="margin-top: 18px;">
+      + Add First Subject
+    </button>
+  </div>
+{% endif %}
+
+<!-- Add Subject Modal -->
+<div id="addSubjectModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Add New Subject</h3>
+      <button class="flash-close" onclick="closeModal('addSubjectModal')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('subjects') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="sub_name">Subject Name *</label>
+          <input type="text" id="sub_name" name="name" class="form-control" placeholder="e.g. Python Programming" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="sub_code">Subject Code</label>
+            <input type="text" id="sub_code" name="code" class="form-control" placeholder="e.g. CS301">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sub_faculty">Faculty / Instructor</label>
+            <input type="text" id="sub_faculty" name="faculty" class="form-control" placeholder="e.g. Mr. Kumar">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="sub_total">Total Topics</label>
+            <input type="number" id="sub_total" name="total_topics" class="form-control" value="20" min="1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sub_comp">Completed Topics</label>
+            <input type="number" id="sub_comp" name="completed_topics" class="form-control" value="0" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="sub_target">Target Completion Date</label>
+            <input type="date" id="sub_target" name="target_date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sub_color">Theme Color</label>
+            <input type="color" id="sub_color" name="color" class="form-control" value="#4F46E5" style="height: 42px; padding: 4px; cursor: pointer;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('addSubjectModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Save Subject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div id="editSubjectModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Edit Subject</h3>
+      <button class="flash-close" onclick="closeModal('editSubjectModal')">✕</button>
+    </div>
+    <form id="editSubjectForm" method="POST" action="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="edit_sub_name">Subject Name *</label>
+          <input type="text" id="edit_sub_name" name="name" class="form-control" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit_sub_code">Subject Code</label>
+            <input type="text" id="edit_sub_code" name="code" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit_sub_faculty">Faculty</label>
+            <input type="text" id="edit_sub_faculty" name="faculty" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit_sub_total">Total Topics</label>
+            <input type="number" id="edit_sub_total" name="total_topics" class="form-control" min="1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit_sub_comp">Completed Topics</label>
+            <input type="number" id="edit_sub_comp" name="completed_topics" class="form-control" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit_sub_target">Target Date</label>
+            <input type="date" id="edit_sub_target" name="target_date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit_sub_color">Theme Color</label>
+            <input type="color" id="edit_sub_color" name="color" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('editSubjectModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Update Subject</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openEditModal(id, name, code, faculty, total, comp, target, color) {
+    document.getElementById('editSubjectForm').action = `/subjects/${id}/edit`;
+    document.getElementById('edit_sub_name').value = name;
+    document.getElementById('edit_sub_code').value = code;
+    document.getElementById('edit_sub_faculty').value = faculty;
+    document.getElementById('edit_sub_total').value = total;
+    document.getElementById('edit_sub_comp').value = comp;
+    document.getElementById('edit_sub_target').value = target;
+    document.getElementById('edit_sub_color').value = color || '#4F46E5';
+    openModal('editSubjectModal');
+  }
+</script>
+{% endblock %}

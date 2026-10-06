@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Progress & Analytics - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Performance & Progress Analytics 📊</h2>
+    <p>Comprehensive overview of your study hours, completion ratios and learning streaks</p>
+  </div>
+</div>
+
+<!-- 4 Key Completion Ratio Metric Cards -->
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-icon-wrap indigo">📅</div>
+    <div class="stat-info">
+      <div class="stat-label">Daily Progress</div>
+      <div class="stat-value">{{ daily_pct }}%</div>
+      <div class="stat-subtext">{{ daily_comp }}/{{ daily_total }} Tasks Done</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap sky">🗓</div>
+    <div class="stat-info">
+      <div class="stat-label">Weekly Progress</div>
+      <div class="stat-value">{{ weekly_pct }}%</div>
+      <div class="stat-subtext">{{ weekly_comp }}/{{ weekly_total }} Tasks Done</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap purple">📆</div>
+    <div class="stat-info">
+      <div class="stat-label">Monthly Progress</div>
+      <div class="stat-value">{{ monthly_pct }}%</div>
+      <div class="stat-subtext">{{ monthly_comp }}/{{ monthly_total }} Tasks Done</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrap green">⏱</div>
+    <div class="stat-info">
+      <div class="stat-label">Total Study Time</div>
+      <div class="stat-value">{{ total_study_hours }} <span style="font-size: 13px;">hrs</span></div>
+      <div class="stat-subtext">{{ week_study_hours }} hrs this week</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid-2">
+  <!-- Weekly Study Hours Bar Chart -->
+  <div class="card">
+    <div class="card-header">
+      <h3><span>📈</span> Weekly Study Hours (Monday - Sunday)</h3>
+    </div>
+    <div style="height: 280px; position: relative;">
+      <canvas id="weeklyHoursChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Subject Progress Chart -->
+  <div class="card">
+    <div class="card-header">
+      <h3><span>📚</span> Subject Syllabus Completion %</h3>
+    </div>
+    <div style="height: 280px; position: relative;">
+      <canvas id="subjectProgressChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Subjects Deep Dive Table/Card -->
+<div class="card" style="margin-top: 24px;">
+  <div class="card-header">
+    <h3><span>🎓</span> Subject Progress Breakdown</h3>
+  </div>
+
+  {% if subjects_progress %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      {% for sub in subjects_progress %}
+      <div style="padding: 14px 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: #FAFAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div>
+            <strong style="font-size: 15px; color: var(--text-main);">{{ sub.name }}</strong>
+            {% if sub.code %}
+              <span class="badge" style="background: var(--primary-light); color: var(--primary); margin-left: 6px;">{{ sub.code }}</span>
+            {% endif %}
+          </div>
+          <span style="font-weight: 800; font-size: 14px; color: {{ sub.color or '#4F46E5' }};">
+            {{ sub.progress_pct }}%
+          </span>
+        </div>
+
+        <div class="progress-bar-container" style="height: 8px; margin: 0 0 8px 0;">
+          <div class="progress-bar-fill" style="width: {{ sub.progress_pct }}%; background: {{ sub.color or '#4F46E5' }};"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
+          <span>Completed <strong>{{ sub.completed_topics }}</strong> of <strong>{{ sub.total_topics }}</strong> Syllabus Topics</span>
+          {% if sub.faculty %}
+            <span>Faculty: {{ sub.faculty }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+      <p>Add subjects to start visualizing curriculum progress.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Fetch dynamic chart data via API
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/api/progress-data');
+      const data = await res.json();
+      
+      // 1. Weekly Study Hours Bar Chart
+      const ctxHours = document.getElementById('weeklyHoursChart').getContext('2d');
+      new Chart(ctxHours, {
+        type: 'bar',
+        data: {
+          labels: data.week_days,
+          datasets: [{
+            label: 'Study Hours',
+            data: data.study_hours_by_day,
+            backgroundColor: 'rgba(79, 70, 229, 0.85)',
+            borderColor: '#4F46E5',
+            borderWidth: 1,
+            borderRadius: 8,
+            maxBarThickness: 40
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) { return val + 'h'; },
+                font: { family: 'Plus Jakarta Sans' }
+              },
+              grid: { color: '#F1F5F9' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', weight: '600' } }
+            }
+          }
+        }
+      });
+
+      // 2. Subject Progress Chart
+      const ctxSub = document.getElementById('subjectProgressChart').getContext('2d');
+      new Chart(ctxSub, {
+        type: 'bar',
+        data: {
+          labels: data.subject_names,
+          datasets: [{
+            label: 'Completion %',
+            data: data.subject_pcts,
+            backgroundColor: data.subject_colors,
+            borderRadius: 8,
+            maxBarThickness: 36
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(val) { return val + '%'; },
+                font: { family: 'Plus Jakarta Sans' }
+              },
+              grid: { color: '#F1F5F9' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', weight: '600' } }
+            }
+          }
+        }
+      });
+      
+    } catch (e) {
+      console.error('Failed to load chart data', e);
+    }
+  });
+</script>
+{% endblock %}

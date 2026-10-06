@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}Exams & Deadlines - StudyMate{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <h2>Exams & Academic Deadlines 📝</h2>
+    <p>Track test dates, mid-terms, final submissions and preparation countdowns</p>
+  </div>
+  <button class="btn-header btn-primary" onclick="openModal('addExamModal')">
+    <span>+</span> <span>Add Exam / Deadline</span>
+  </button>
+</div>
+
+<!-- Exams Grid -->
+{% if exams %}
+  <div class="grid-2">
+    {% for exam in exams %}
+    <div class="card" style="border-top: 5px solid {{ exam.subject_color or '#4F46E5' }};">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 12px; font-weight: 700; color: {{ exam.subject_color or '#4F46E5' }}; background: #F1F5F9; padding: 4px 8px; border-radius: 6px;">
+              {{ exam.subject_name }}
+            </span>
+            {% if exam.days_left < 0 %}
+              <span class="badge" style="background: #F1F5F9; color: #64748B;">Concluded</span>
+            {% elif exam.days_left == 0 %}
+              <span class="badge" style="background: #FEF2F2; color: #DC2626;">TODAY! 🔥</span>
+            {% elif exam.days_left <= 3 %}
+              <span class="badge badge-high">{{ exam.days_left }} Days Left</span>
+            {% elif exam.days_left <= 7 %}
+              <span class="badge badge-medium">{{ exam.days_left }} Days Left</span>
+            {% else %}
+              <span class="badge badge-low">{{ exam.days_left }} Days Left</span>
+            {% endif %}
+          </div>
+
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 8px;">
+            {{ exam.name }}
+          </h3>
+
+          <div style="display: flex; align-items: center; gap: 16px; margin-top: 6px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap;">
+            <span>🗓 <strong>{{ exam.exam_date }}</strong></span>
+            {% if exam.exam_time %}
+              <span>⏰ {{ exam.exam_time }}</span>
+            {% endif %}
+          </div>
+
+          {% if exam.important_topics %}
+            <div style="margin-top: 12px; padding: 10px 14px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px; color: #334155; border: 1px solid #E2E8F0;">
+              <strong>Important Topics:</strong> {{ exam.important_topics }}
+            </div>
+          {% endif %}
+
+          {% if exam.notes %}
+            <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+              <strong>Notes:</strong> {{ exam.notes }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-icon" title="Edit Exam" onclick="openEditExamModal({{ exam.id }}, '{{ exam.name | replace("'", "\\'") }}', '{{ exam.subject_id or '' }}', '{{ exam.exam_date }}', '{{ exam.exam_time or '' }}', '{{ exam.important_topics | replace("'", "\\'") if exam.important_topics else '' }}', '{{ exam.notes | replace("'", "\\'") if exam.notes else '' }}')">
+            ✏️
+          </button>
+          <form method="POST" action="{{ url_for('delete_exam', id=exam.id) }}" onsubmit="return confirm('Delete this exam entry?')">
+            <button type="submit" class="btn-icon" title="Delete Exam" style="color: var(--danger);">
+              🗑
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 48px 24px;">
+    <div style="font-size: 48px; margin-bottom: 12px;">📝</div>
+    <h3 style="font-size: 18px; font-weight: 700;">No upcoming exams or deadlines logged</h3>
+    <p style="color: var(--text-muted); margin-top: 4px;">
+      Never miss an exam date by adding your midterms and project submission deadlines.
+    </p>
+    <button class="btn-header btn-primary" onclick="openModal('addExamModal')" style="margin-top: 18px;">
+      + Add First Exam
+    </button>
+  </div>
+{% endif %}
+
+<!-- Add Exam Modal -->
+<div id="addExamModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Add Exam / Deadline</h3>
+      <button class="flash-close" onclick="closeModal('addExamModal')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('exams') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="exam_name">Exam / Test Name *</label>
+          <input type="text" id="exam_name" name="name" class="form-control" placeholder="e.g. Python Programming Mid-Semester Exam" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="exam_sub">Subject</label>
+          <select id="exam_sub" name="subject_id" class="form-control">
+            <option value="">-- General / No Subject --</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.code or '' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="exam_date">Exam Date *</label>
+            <input type="date" id="exam_date" name="exam_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exam_time">Exam Time</label>
+            <input type="text" id="exam_time" name="exam_time" class="form-control" placeholder="e.g. 10:00 AM">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="exam_topics">Key / Important Topics</label>
+          <textarea id="exam_topics" name="important_topics" class="form-control" rows="2" placeholder="e.g. OOP, Normalization, SQL Transactions..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="exam_notes">Preparation Notes / Room Details</label>
+          <textarea id="exam_notes" name="notes" class="form-control" rows="2" placeholder="e.g. Bring scientific calculator & ID card"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('addExamModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Save Exam</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Exam Modal -->
+<div id="editExamModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Edit Exam Details</h3>
+      <button class="flash-close" onclick="closeModal('editExamModal')">✕</button>
+    </div>
+    <form id="editExamForm" method="POST" action="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="edit_exam_name">Exam / Test Name *</label>
+          <input type="text" id="edit_exam_name" name="name" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit_exam_sub">Subject</label>
+          <select id="edit_exam_sub" name="subject_id" class="form-control">
+            <option value="">-- General / No Subject --</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit_exam_date">Exam Date *</label>
+            <input type="date" id="edit_exam_date" name="exam_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit_exam_time">Exam Time</label>
+            <input type="text" id="edit_exam_time" name="exam_time" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit_exam_topics">Key Topics</label>
+          <textarea id="edit_exam_topics" name="important_topics" class="form-control" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit_exam_notes">Notes</label>
+          <textarea id="edit_exam_notes" name="notes" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-header btn-secondary" onclick="closeModal('editExamModal')">Cancel</button>
+        <button type="submit" class="btn-header btn-primary">Update Exam</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openEditExamModal(id, name, subId, edate, etime, topics, notes) {
+    document.getElementById('editExamForm').action = `/exams/${id}/edit`;
+    document.getElementById('edit_exam_name').value = name;
+    document.getElementById('edit_exam_sub').value = subId || '';
+    document.getElementById('edit_exam_date').value = edate;
+    document.getElementById('edit_exam_time').value = etime || '';
+    document.getElementById('edit_exam_topics').value = topics || '';
+    document.getElementById('edit_exam_notes').value = notes || '';
+    openModal('editExamModal');
+  }
+</script>
+{% endblock %}

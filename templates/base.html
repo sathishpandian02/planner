@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}StudyMate - Student Study Planner & Achievement Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="app-brand-icon">📚</div>
+        <div class="brand-text">
+          <h1>StudyMate</h1>
+          <span>Student Planner</span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-category">Main Menu</div>
+        <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+          <span class="nav-icon">🏠</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('subjects') }}" class="nav-link {% if request.endpoint == 'subjects' %}active{% endif %}">
+          <span class="nav-icon">📚</span>
+          <span>Subjects</span>
+        </a>
+        <a href="{{ url_for('planner') }}" class="nav-link {% if request.endpoint == 'planner' %}active{% endif %}">
+          <span class="nav-icon">📅</span>
+          <span>Study Planner</span>
+        </a>
+        <a href="{{ url_for('tasks') }}" class="nav-link {% if request.endpoint == 'tasks' %}active{% endif %}">
+          <span class="nav-icon">✅</span>
+          <span>Daily Tasks</span>
+        </a>
+        <a href="{{ url_for('timer') }}" class="nav-link {% if request.endpoint == 'timer' %}active{% endif %}">
+          <span class="nav-icon">⏱</span>
+          <span>Study Timer</span>
+        </a>
+        
+        <div class="nav-category">Academic Track</div>
+        <a href="{{ url_for('exams') }}" class="nav-link {% if request.endpoint == 'exams' %}active{% endif %}">
+          <span class="nav-icon">📝</span>
+          <span>Exams & Deadlines</span>
+        </a>
+        <a href="{{ url_for('goals') }}" class="nav-link {% if request.endpoint == 'goals' %}active{% endif %}">
+          <span class="nav-icon">🎯</span>
+          <span>Study Goals</span>
+        </a>
+        <a href="{{ url_for('progress') }}" class="nav-link {% if request.endpoint == 'progress' %}active{% endif %}">
+          <span class="nav-icon">📊</span>
+          <span>Progress & Analytics</span>
+        </a>
+        <a href="{{ url_for('achievements') }}" class="nav-link {% if request.endpoint == 'achievements' %}active{% endif %}">
+          <span class="nav-icon">🏆</span>
+          <span>Achievements</span>
+        </a>
+        <a href="{{ url_for('calendar_view') }}" class="nav-link {% if request.endpoint == 'calendar_view' %}active{% endif %}">
+          <span class="nav-icon">📆</span>
+          <span>Calendar</span>
+        </a>
+        
+        <div class="nav-category">Account</div>
+        <a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}">
+          <span class="nav-icon">👤</span>
+          <span>Profile</span>
+        </a>
+        <a href="{{ url_for('logout') }}" class="nav-link" style="color: var(--danger);">
+          <span class="nav-icon">🚪</span>
+          <span>Logout</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <a href="{{ url_for('profile') }}" class="user-mini-card">
+          <div class="user-avatar">
+            {{ session.get('name', 'S')[0] | upper }}
+          </div>
+          <div class="user-mini-info">
+            <div class="user-mini-name">{{ session.get('name', 'Student') }}</div>
+            <div class="user-mini-role">@{{ session.get('username', 'student') }}</div>
+          </div>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Navigation Bar -->
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle Sidebar">☰</button>
+          <div class="topbar-date">
+            <span>🗓</span> <span id="currentDateDisplay"></span>
+          </div>
+        </div>
+        
+        <div class="topbar-actions">
+          <a href="{{ url_for('achievements') }}" class="streak-badge" title="Active Study Streak">
+            <span>🔥</span> <span>Streak Active</span>
+          </a>
+          <a href="{{ url_for('timer') }}" class="btn-header btn-primary">
+            <span>⏱</span> <span>Start Focus</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Dynamic Content Body -->
+      <main class="content-area">
+        <!-- Flash Message Alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash-alert {{ category }}">
+                  <span>{{ message }}</span>
+                  <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Set formatted topbar date
+    const d = new Date();
+    const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+    const dateStr = d.toLocaleDateString('en-US', options);
+    const dateElem = document.getElementById('currentDateDisplay');
+    if (dateElem) dateElem.innerText = dateStr;
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
